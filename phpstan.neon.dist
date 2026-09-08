@@ -1,0 +1,16 @@
+parameters:
+    level: 7
+    paths:
+        - src
+    tmpDir: build/phpstan
+    ignoreErrors:
+        # The Is*Event traits ship as opt-in broadcast helpers for host apps;
+        # nothing inside src/ uses them, so PHPStan cannot analyse them in context.
+        -
+            identifier: trait.unused
+            paths:
+                - src/IsPatchElementsEvent.php
+                - src/IsPatchSignalsEvent.php
+                - src/IsRemoveElementsEvent.php
+                - src/IsExecuteScriptEvent.php
+                - src/IsLocationEvent.php
