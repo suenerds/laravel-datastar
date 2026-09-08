@@ -235,6 +235,77 @@ view('todos.index')->fragmentsAsCollection();            // every fragment, keye
 view('todos.index')->fragmentsAsCollection(['list']);    // only the named fragments
 ```
 
+## Precognition
+
+[Laravel Precognition](https://laravel.com/docs/precognition) lets you run a request's validation rules *without* executing the controller — perfect for live validation while the user types. Because `DatastarRequest` is a regular `FormRequest`, it works with Precognition out of the box: add the `HandlePrecognitiveRequests` middleware to the route, and reuse the same request class for both the precognitive check and the real submission.
+
+```php
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+
+Route::put('/profile', function (UpdateProfileRequest $request) {
+    // only reached by real submissions, never by precognitive requests
+})->middleware([HandlePrecognitiveRequests::class]);
+```
+
+On the Datastar side, no Precognition frontend package is required — a small form component covers everything. Submitting with `contentType: 'form'` sends the actual form fields (regular Laravel input), and the debounced `input` listener re-posts the form with the `Precognition` headers as the user types, validating only the field they are typing in via `evt.target.name`:
+
+```blade
+{{-- resources/views/components/form.blade.php --}}
+@props(['live' => false])
+
+<form
+    method="POST"
+    data-signals="{errors: {}}"
+    data-on:submit="@post(el.action, {contentType: 'form'})"
+    @if ($live)
+        data-on:input__debounce.400ms="@post(el.action, {
+            contentType: 'form',
+            headers: {
+                'Accept': 'application/json',
+                'Precognition': 'true',
+                'Precognition-Validate-Only': evt.target.name,
+            },
+        })"
+    @endif
+    {{ $attributes }}
+>
+    @csrf
+    {{ $slot }}
+</form>
+```
+
+The `Accept: application/json` header matters: it makes failed precognitive checks respond with a `422` JSON error payload instead of a redirect. A passing check responds `204` with a `Precognition-Success: true` header. Real submissions (without the `Precognition` header) run through validation and your controller exactly as before.
+
+Since `contentType: 'form'` submits ordinary form input rather than signals, your rules read it like any Laravel request — this works identically with a plain `FormRequest` or a `DatastarRequest`. If you drive the form through signals instead (`data-bind`), send the same `Precognition` headers with a regular Datastar action and `DatastarRequest` validates the signal payload precognitively.
+
+### Displaying validation errors
+
+Datastar applies JSON responses to signals, so the `errors` object from Laravel's `422` payload lands in the `$errors` signal the form initialized. Displaying an error next to its field is a one-liner component — Laravel's errors are arrays per field, so `.0` reads the first message:
+
+```blade
+{{-- resources/views/components/form/error.blade.php --}}
+@props(['name'])
+
+<p
+    style="display: none"
+    data-show="$errors.{{ $name }}"
+    data-text="$errors.{{ $name }} && $errors.{{ $name }}.0"
+    {{ $attributes }}
+></p>
+```
+
+```blade
+<x-form action="/profile" live>
+    <input name="name" />
+    <x-form.error name="name" class="text-sm text-red-600" />
+
+    <input name="email" type="email" />
+    <x-form.error name="email" class="text-sm text-red-600" />
+
+    <button>Save</button>
+</x-form>
+```
+
 ## Broadcasting
 
 To push Datastar patches over websockets, add one of the broadcast traits to a Laravel event. Each trait implements `broadcastWith()` and `broadcastAs()` for you and asks only for the event-specific input:

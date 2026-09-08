@@ -7,7 +7,7 @@
 - `IsPatchSignalsEvent`, `IsRemoveElementsEvent`, `IsExecuteScriptEvent`, and `IsLocationEvent` broadcast traits, completing the set alongside `IsPatchElementsEvent` so host-app events can broadcast any Datastar event type.
 - `PatchSignals::onlyIfMissing()` for the serialized `true`/absent representation of the only-if-missing flag.
 - Test suite covering `DatastarRequest` validation, the streamed event classes and their `toResponse()` paths, the `sse`, `signals`, `isDatastar`, `fragmentsAsCollection`, and `streamFragmentsIf` macros, and the broadcast traits.
-- README documentation covering the full package surface: signal reading and validation, the event classes and both response styles, Blade fragment streaming, and the broadcast traits. The obsolete `vendor:publish` instructions were removed since the package has no publishable resources.
+- README documentation covering the full package surface: signal reading and validation, the event classes and both response styles, Blade fragment streaming, Precognition live validation with form and error-display components, and the broadcast traits. The obsolete `vendor:publish` instructions were removed since the package has no publishable resources.
 
 ### Changed
 
